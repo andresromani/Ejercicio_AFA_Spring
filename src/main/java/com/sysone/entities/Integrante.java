@@ -24,11 +24,11 @@ public class Integrante {
 	@Size(min = 8, max = 8, message = "el campo dni debe tener 8 digitos")
 	private String dni;
 	
-	@NotNull(message = "el campo nombre no puede ser nulo ni puede estar vacio")
+	@NotNull(message = "el campo nombre no puede ser null")
 	@Size(min = 2, max = 50, message = "el campo nombre debe tener entre 2 y 50 caracteres")
 	private String nombre;
 	
-	@NotNull(message = "el campo apellido no puede ser nulo ni puede estar vacio")
+	@NotNull(message = "el campo apellido no puede ser null")
 	@Size(min = 2, max = 50, message = "el campo apellido debe tener entre 2 y 50 caracteres")
 	private String apellido;
 	
@@ -36,11 +36,11 @@ public class Integrante {
 	@JoinColumn(name = "direccion_id")
 	private Direccion direccion;
 	
-	@NotNull(message = "el campo telefono no puede ser nulo ni puede estar vacio")
+	@NotNull(message = "el campo telefono no puede ser null")
 	@Size(min = 8, max = 30, message = "el campo telefono debe tener entre 8 y 20 caracteres")
 	private String telefono;
 	
-	@NotBlank(message = "el campo email no puede ser nulo ni puede estar vacio")
+	@NotBlank(message = "el campo email no puede ser null")
 	@Email(message = "el campo email debe ser un email valido")
 	private String email;
 	

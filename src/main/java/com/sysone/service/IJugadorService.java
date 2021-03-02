@@ -18,6 +18,7 @@ public interface IJugadorService {
 	public void delete(String dni);
 	public HistorialJugadorEquipo saveHistorial(HistorialJugadorEquipo historial);
 	public List<HistorialJugadorEquipoDto> listarHistoriales(String dni);
+	public HistorialJugadorEquipoDto listarHistorialPorId(String id);
 	public void eliminarHistorialPorId(String id);
 	public HistorialJugadorEquipoDto entityToDto(HistorialJugadorEquipo historial);
 	

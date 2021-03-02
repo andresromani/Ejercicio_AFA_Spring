@@ -15,9 +15,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,6 +46,12 @@ public class JugadorController {
 		Map<String, Object> response = new HashMap<String, Object>();
 		ResponseEntity<Map<String, Object>> responseEntity = null;
 		
+		Optional<Jugador> jugadorOptional = jugador.getDni() != null ? jugadorService.findById(jugador.getDni()) : Optional.empty();
+		if (jugadorOptional.isPresent()) {
+			response.put("mensaje", "el jugador no se ha creado exitosamente: el jugador con dni " + jugador.getDni() + " ya existe");
+			return ResponseEntity.status(409).body(response);
+		}
+		
 		List<String> errores = null;
 		if (result.hasErrors()) {
 			errores = new ArrayList<String>();
@@ -54,21 +60,15 @@ public class JugadorController {
 			}
 			
 			response.put("errores", errores);
-			responseEntity = ResponseEntity.badRequest().body(response);
-			return responseEntity;
+			return ResponseEntity.badRequest().body(response);
 		}
 		
 		try {
 			Jugador j = jugadorService.save(jugador);
 			
-			if (j != null) {
-				response.put("jugador", j);
-				response.put("mensaje", "el jugador se ha creado exitosamente");
-				responseEntity = ResponseEntity.ok(response);
-			} else {
-				response.put("mensaje", "el jugador no se ha creado exitosamente");
-				responseEntity = ResponseEntity.status(500).body(response);
-			}
+			response.put("jugador", j);
+			response.put("mensaje", "el jugador se ha creado exitosamente");
+			responseEntity = ResponseEntity.ok(response);
 		} catch (DataAccessException e) {
 			response.put("mensaje", "el jugador no se ha creado exitosamente: " + e.getMostSpecificCause().toString());
 			responseEntity = ResponseEntity.status(500).body(response);
@@ -80,18 +80,15 @@ public class JugadorController {
 	@GetMapping
 	public ResponseEntity<Map<String, Object>> listar() {
 		Map<String, Object> response = new HashMap<String, Object>();
-		ResponseEntity<Map<String, Object>> responseEntity = null;
 		
 		List<Jugador> jugadores = jugadorService.findAll();
 		if (jugadores.size() > 0) {
 			response.put("cantidad", jugadores.size());
 			response.put("jugadores", jugadores);
-			responseEntity = ResponseEntity.ok(response);
-		} else {
-			responseEntity = ResponseEntity.noContent().build();
+			return ResponseEntity.ok(response);
 		}
 		
-		return responseEntity;
+		return ResponseEntity.noContent().build();
 	}
 	
 	@GetMapping("{dni}")
@@ -99,15 +96,20 @@ public class JugadorController {
 		Optional<Jugador> optionalJugador = jugadorService.findById(dni);
 		if (optionalJugador.isPresent()) {
 			return ResponseEntity.ok(optionalJugador.get());
-		} else {
-			return ResponseEntity.noContent().build();
 		}
+		
+		return ResponseEntity.notFound().build();
 	}
 	
-	@PatchMapping("{dni}")
+	@PutMapping("{dni}")
 	public ResponseEntity<Map<String, Object>> actualizar(@PathVariable String dni, @Valid @RequestBody Jugador jugador, BindingResult result) {
 		Map<String, Object> response = new HashMap<String, Object>();
 		ResponseEntity<Map<String, Object>> responseEntity = null;
+		
+		Optional<Jugador> jugadorOptional = jugadorService.findById(dni);
+		if (jugadorOptional.isEmpty()) {
+			return ResponseEntity.notFound().build();
+		}
 		
 		List<String> errores = null;
 		if (result.hasErrors()) {
@@ -124,14 +126,10 @@ public class JugadorController {
 		try {
 			jugador.setDni(dni);
 			Jugador j = jugadorService.save(jugador);
-			if (j != null) {
-				response.put("jugador", j);
-				response.put("mensaje", "el jugador con dni se ha actualizado exitosamente");
-				responseEntity = ResponseEntity.ok(response);
-			} else {
-				response.put("mensaje", "el jugador no se ha actualizado exitosamente");
-				responseEntity = ResponseEntity.status(500).body(response);
-			}
+			
+			response.put("jugador", j);
+			response.put("mensaje", "el jugador se ha actualizado exitosamente");
+			responseEntity = ResponseEntity.ok(response);
 		} catch (DataAccessException e) {
 			response.put("mensaje", "el jugador no se ha actualizado exitosamente: " + e.getMostSpecificCause().toString());
 			responseEntity = ResponseEntity.status(500).body(response);
@@ -145,10 +143,15 @@ public class JugadorController {
 		Map<String, String> response = new HashMap<String, String>();
 		ResponseEntity<Map<String, String>> responseEntity = null;
 		
+		Optional<Jugador> jugadorOptional = jugadorService.findById(dni);
+		if (jugadorOptional.isEmpty()) {
+			return ResponseEntity.notFound().build();
+		}
+		
 		try {
 			jugadorService.delete(dni);
 			response.put("mensaje", "el jugador se ha eliminado exitosamente");
-			responseEntity = ResponseEntity.status(500).body(response);
+			responseEntity = ResponseEntity.ok(response);
 		} catch(DataAccessException e) {
 			response.put("mensaje", "el jugador no se ha eliminado exitosamente: " + e.getMostSpecificCause().toString());
 			responseEntity = ResponseEntity.status(500).body(response);
@@ -164,6 +167,13 @@ public class JugadorController {
 		Map<String, Object> response = new HashMap<String, Object>();
 		ResponseEntity<Map<String, Object>> responseEntity = null;
 		
+		Optional<Jugador> optionalJugador = jugadorService.findById(dni);
+		Optional<Equipo> optionalEquipo = historial.getEquipo() != null ? equipoService.findById(historial.getEquipo().getCuit()) : Optional.empty();
+		
+		if (optionalJugador.isEmpty() || optionalEquipo.isEmpty()) {
+			return ResponseEntity.notFound().build();
+		}
+		
 		List<String> errores = null;
 		if (result.hasErrors()) {
 			errores = new ArrayList<>();
@@ -176,32 +186,14 @@ public class JugadorController {
 			return responseEntity;
 		}
 		
-		try {
-			if (historial.getEquipo() != null) {
-				Optional<Jugador> optionalJugador = jugadorService.findById(dni);
-				Optional<Equipo> optionalEquipo = equipoService.findById(historial.getEquipo().getCuit());
-				
-				if (optionalJugador.isPresent() && optionalEquipo.isPresent()) {
-					historial.setJugador(optionalJugador.get());
-					historial.setEquipo(optionalEquipo.get());
-					HistorialJugadorEquipo h = jugadorService.saveHistorial(historial);
-					
-					if (h != null) {
-						response.put("historial", h);
-						response.put("mensaje", "el historial del jugador con dni " + dni + " se ha creado exitosamente");
-						responseEntity = ResponseEntity.ok(response);
-					} else {
-						response.put("mensaje", "el historial no se ha creado exitosamente");
-						responseEntity = ResponseEntity.status(500).body(response);
-					}
-				} else {
-					response.put("mensaje", "el historial no se ha creado exitosamente: el equipo/jugador no existe");
-					responseEntity = ResponseEntity.badRequest().body(response);
-				}
-			} else {
-				response.put("mensaje", "el historial no se ha creado exitosamente: el equipo no puede ser null");
-				responseEntity = ResponseEntity.badRequest().body(response);
-			}
+		try {	
+			historial.setJugador(optionalJugador.get());
+			historial.setEquipo(optionalEquipo.get());
+			HistorialJugadorEquipoDto h = jugadorService.entityToDto(jugadorService.saveHistorial(historial));
+			
+			response.put("historial", h);
+			response.put("mensaje", "el historial del jugador con dni " + dni + " se ha creado exitosamente");
+			responseEntity = ResponseEntity.ok(response);
 		} catch(DataAccessException e) {
 			response.put("mensaje", "el historial no se ha creado exitosamente: " + e.getMostSpecificCause().toString());
 			responseEntity = ResponseEntity.status(500).body(response);
@@ -213,49 +205,41 @@ public class JugadorController {
 	@GetMapping("{dni}/historiales")
 	public ResponseEntity<Map<String, Object>> listarHistorialPorJugador(@PathVariable String dni) {
 		Map<String, Object> response = new HashMap<String, Object>();
-		ResponseEntity<Map<String, Object>> responseEntity = null;
 		
 		List<HistorialJugadorEquipoDto> historiales = jugadorService.listarHistoriales(dni);
 		if (historiales.size() > 0) {
 			response.put("cantidad", historiales.size());
 			response.put("historiales", historiales);
-			responseEntity = ResponseEntity.ok(response);
-		} else {
-			responseEntity = ResponseEntity.noContent().build();
+			return ResponseEntity.ok(response);
 		}
 		
-		return responseEntity;
+		return ResponseEntity.noContent().build();
 	}
 	
 	@GetMapping("{dni}/historiales/{id}")
 	public ResponseEntity<HistorialJugadorEquipoDto> listarHistorialPorId(@PathVariable String dni, @PathVariable String id) {
-		List<HistorialJugadorEquipoDto> historiales = jugadorService.listarHistoriales(dni);
-		HistorialJugadorEquipoDto his = null;
-		ResponseEntity<HistorialJugadorEquipoDto> responseEntity = null;
-		
-		if (historiales != null && historiales.size() > 0) {
-			for (HistorialJugadorEquipoDto h : historiales) {
-				if (h.getId().equals(id)) {
-					his = h;
-				}
-			}
-			
-			if (his != null) {
-				responseEntity = ResponseEntity.ok(his);
-			} else {
-				responseEntity = ResponseEntity.noContent().build();
-			}
-		} else {
-			responseEntity = ResponseEntity.noContent().build();
+		Optional<Jugador> optionalJugador = jugadorService.findById(dni);
+		HistorialJugadorEquipoDto historial = jugadorService.listarHistorialPorId(id);
+		if (optionalJugador.isEmpty() || historial == null) {
+			return ResponseEntity.notFound().build();
 		}
 		
-		return responseEntity;
+		return ResponseEntity.ok(historial);
 	}
 	
-	@PatchMapping("{dni}/historiales/{id}")
+	@PutMapping("{dni}/historiales/{id}")
 	public ResponseEntity<Map<String, Object>> actualizarHistorial(@PathVariable String dni, @PathVariable String id, @Valid @RequestBody HistorialJugadorEquipo historial, BindingResult result) {
 		Map<String, Object> response = new HashMap<String, Object>();
 		ResponseEntity<Map<String, Object>> responseEntity = null;
+		
+		HistorialJugadorEquipoDto optionalHistorial = jugadorService.listarHistorialPorId(id);
+		Optional<Jugador> optionalJugador = jugadorService.findById(dni);
+		Optional<Equipo> optionalEquipo = historial.getEquipo() != null ? equipoService.findById(historial.getEquipo().getCuit()) : Optional.empty();
+		
+		if (optionalHistorial == null || optionalJugador.isEmpty() || optionalEquipo.isEmpty()) {
+			responseEntity = ResponseEntity.notFound().build();
+			return responseEntity;
+		}
 		
 		List<String> errores = null;
 		if (result.hasErrors()) {
@@ -270,32 +254,14 @@ public class JugadorController {
 		}
 		
 		try {
-			if (historial.getEquipo() != null) {
-				Optional<Jugador> optionalJugador = jugadorService.findById(dni);
-				Optional<Equipo> optionalEquipo = equipoService.findById(historial.getEquipo().getCuit());
-				
-				if (optionalJugador.isPresent() && optionalEquipo.isPresent()) {
-					historial.setId(id);
-					historial.setJugador(optionalJugador.get());
-					historial.setEquipo(optionalEquipo.get());
-					HistorialJugadorEquipo h = jugadorService.saveHistorial(historial);
-					
-					if (h != null) {
-						response.put("historial", h);
-						response.put("mensaje", "el historial se ha actualizado exitosamente");
-						responseEntity = ResponseEntity.ok(response);
-					} else {
-						response.put("mensaje", "el historial no se ha actualizado exitosamente");
-						responseEntity = ResponseEntity.status(500).body(response);
-					}
-				} else {
-					response.put("mensaje", "el historial no se ha actualizado exitosamente: el equipo/jugador no existe");
-					responseEntity = ResponseEntity.badRequest().body(response);
-				}
-			} else {
-				response.put("mensaje", "el campo no se ha actualizado exitosamente: el equipo no puede ser null");
-				responseEntity = ResponseEntity.badRequest().body(response);
-			}
+			historial.setId(id);
+			historial.setJugador(optionalJugador.get());
+			historial.setEquipo(optionalEquipo.get());
+			HistorialJugadorEquipoDto h = jugadorService.entityToDto(jugadorService.saveHistorial(historial));
+			
+			response.put("historial", h);
+			response.put("mensaje", "el historial del jugador con dni " + dni + " se ha actualizado exitosamente");
+			responseEntity = ResponseEntity.ok(response);
 		} catch(DataAccessException e) {
 			response.put("mensaje", "el historial no se ha actualizado exitosamente: " + e.getMostSpecificCause().toString());
 			responseEntity = ResponseEntity.status(500).body(response);
@@ -308,6 +274,12 @@ public class JugadorController {
 	public ResponseEntity<Map<String, String>> deleteHistorial(@PathVariable String dni, @PathVariable String id) {
 		Map<String, String> response = new HashMap<String, String>();
 		ResponseEntity<Map<String, String>> responseEntity = null;
+		
+		HistorialJugadorEquipoDto historial = jugadorService.listarHistorialPorId(id);
+		Optional<Jugador> jugadorOptional = jugadorService.findById(dni);
+		if (historial == null || jugadorOptional.isEmpty()) {
+			return ResponseEntity.notFound().build();
+		}
 		
 		try {
 			jugadorService.eliminarHistorialPorId(id);

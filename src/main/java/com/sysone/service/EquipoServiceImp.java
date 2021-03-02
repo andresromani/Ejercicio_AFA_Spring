@@ -91,6 +91,19 @@ public class EquipoServiceImp implements IEquipoService {
 		
 		return historialesDto;
 	}
+	
+	@Override
+	@Transactional(readOnly = true)
+	public HistorialJugadorEquipoDto listarHistorialPorId(String id) {
+		Optional<HistorialJugadorEquipo> historialOptional = iHistorialRep.findById(id);
+		
+		if (historialOptional.isPresent()) {
+			HistorialJugadorEquipoDto historialDto = entityToDto(historialOptional.get());
+			return historialDto;
+		}
+		
+		return null;
+	}
 
 	@Override
 	@Transactional(readOnly = true)

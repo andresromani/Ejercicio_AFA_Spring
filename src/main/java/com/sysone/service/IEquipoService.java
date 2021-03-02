@@ -23,6 +23,7 @@ public interface IEquipoService {
 	public List<Jugador> listarJugadores(String cuit);
 	public List<Jugador> listarJugadores(String cuit, LocalDate fecha);
 	public List<HistorialJugadorEquipoDto> listarHistoriales(String cuit);
+	public HistorialJugadorEquipoDto listarHistorialPorId(String id);
 	public List<Jugador> listarJugadoresPorPosicion(String cuit, Posicion posicion);
 	public List<Jugador> listarJugadoresPorPosicion(String cuit, Posicion posicion, LocalDate fecha);
 	public HistorialJugadorEquipoDto entityToDto(HistorialJugadorEquipo historial);
