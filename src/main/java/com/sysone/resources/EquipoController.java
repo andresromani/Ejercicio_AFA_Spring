@@ -205,18 +205,15 @@ public class EquipoController {
 	@GetMapping("{cuit}/historiales")
 	public ResponseEntity<Map<String, Object>> listarHistoriales(@PathVariable String cuit) {
 		Map<String, Object> response = new HashMap<String, Object>();
-		ResponseEntity<Map<String, Object>> responseEntity = null;
 		
 		List<HistorialJugadorEquipoDto> historiales = equipoService.listarHistoriales(cuit);
 		if (historiales.size() > 0) {
 			response.put("cantidad", historiales.size());
 			response.put("historiales", historiales);
-			responseEntity = ResponseEntity.ok(response);
-		} else {
-			responseEntity = ResponseEntity.noContent().build();
+			return ResponseEntity.ok(response);
 		}
 		
-		return responseEntity;
+		return ResponseEntity.noContent().build();
 	}
 	
 }
