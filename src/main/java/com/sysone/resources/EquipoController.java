@@ -107,7 +107,7 @@ public class EquipoController {
 		Map<String, Object> response = new HashMap<String, Object>();
 		ResponseEntity<Map<String, Object>> responseEntity = null;
 		
-		Optional<Equipo> optionalEquipo = equipoService.findById(equipo.getCuit());
+		Optional<Equipo> optionalEquipo = equipoService.findById(cuit);
 		if (optionalEquipo.isEmpty()) {
 			return ResponseEntity.notFound().build();
 		}
@@ -125,6 +125,7 @@ public class EquipoController {
 		}
 		
 		try {
+			equipo.setCuit(cuit);
 			Equipo e = equipoService.save(equipo);
 			
 			response.put("equipo", e);
